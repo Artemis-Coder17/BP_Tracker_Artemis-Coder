@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BP Tracker</title>
+<link rel="stylesheet" href="../css/styleaw.css">
+<style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+        input[type="number"], input[type="date"], input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        /* Adjustments for mobile */
+        @media only screen and (max-width: 600px) {
+            .bp-table th, .bp-table td {
+                font-size: 14px;
+                padding: 8px;
+            }
+        }
+
+
+        /* Additional styles for the table */
+        .bp-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .bp-table th, .bp-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+        }
+        .bp-table th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .bp-table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+        .dark-mode .container {
+            background-color: #444;
+        }
+        .dark-mode .bp-table {
+            background-color: #555;
+            color: #fff;
+        }
+        .dark-mode .bp-table th {
+            background-color: #333;
+        }
+        .dark-mode .bp-table tbody tr:nth-child(even) {
+            background-color: #666; /* Adjusted color for even rows in dark mode */
+        }
+
+        /* Additional styles for the sun and moon icons */
+        #dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 28px; /* Initial font size */
+        }
+
+        @media only screen and (max-width: 600px) {
+            #dark-mode-toggle {
+                top: 10px; /* Adjust top position for smaller screens */
+                right: 10px; /* Adjust right position for smaller screens */
+                font-size: 24px; /* Adjusted font size for smaller screens */
+            }
+        }
+
+        #dark-mode-toggle .icon {
+            font-size: 28px; /* Increased icon size */
+        }
+
+        /* CSS for the footer */
+        footer {
+            text-align: center; /* Center align the text */
+            padding: 20px 0; /* Add some padding for spacing */
+            background-color: #f2f2f2; /* Background color for light mode */
+            color: #333; /* Text color for light mode */
+        }
+
+        footer p {
+            margin: 5px 0; /* Add some margin between paragraphs */
+        }
+
+        /* Dark mode styles for the footer */
+        .dark-mode footer {
+            background-color: #333; /* Background color for dark mode */
+            color: #f2f2f2; /* Text color for dark mode */
+        }
+
+        /* Adjustments for mobile */
+        @media only screen and (max-width: 600px) {
+            footer {
+                font-size: 14px; /* Adjust font size for smaller screens */
+            }
+        }
+
+</style>
+
+</head>
+<body>
+
+<!-- Dark mode toggle button with sun and moon icons -->
+<div id="dark-mode-toggle" onclick="toggleDarkMode()">
+    <span class="icon" id="sun-icon">&#9728;</span> <!-- Sun icon -->
+    <span class="icon" id="moon-icon" style="display:none;">&#9790;</span> <!-- Moon icon -->
+</div>
+
+<div class="container">
+    <h2>BP Tracker</h2>
+    <label for="upper">Systolic BP (Upper):</label>
+    <input type="number" id="upper" placeholder="Enter upper systolic BP">
+
+    <label for="lower">Systolic BP (Lower):</label>
+    <input type="number" id="lower" placeholder="Enter lower systolic BP">
+
+    <!-- Automatically capture the current date and time -->
+    <input type="hidden" id="date" value="">
+    <input type="hidden" id="time" value="">
+
+    <button onclick="recordBP()">Record BP</button>
+    <button onclick="downloadCSV()">Download CSV</button>
+    <div id="message"></div>
+</div>
+
+<table id="bpTable" class="bp-table">
+    <thead>
+        <tr>
+            <th>Systolic BP (Upper)</th>
+            <th>Systolic BP (Lower)</th>
+            <th>Date</th>
+            <th>Time</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+function recordBP() {
+    var upper = document.getElementById("upper").value;
+    var lower = document.getElementById("lower").value;
+    var date = getCurrentDate();
+    var time = getCurrentTime();
+
+    if (upper === "" || lower === "") {
+        document.getElementById("message").innerHTML = "Please fill in all fields.";
+        return;
+    }
+
+    // Create a new row in the table
+    var newRow = "<tr><td>" + upper + "</td><td>" + lower + "</td><td>" + date + "</td><td>" + time + "</td></tr>";
+
+    // Append the new row to the table
+    var tableBody = document.querySelector("#bpTable tbody");
+    tableBody.insertAdjacentHTML('beforeend', newRow);
+
+    // Clear input fields
+    document.getElementById("upper").value = "";
+    document.getElementById("lower").value = "";
+
+    // Save data to local storage
+    saveDataToLocalStorage(upper, lower, date, time);
+
+    // Display success message
+    document.getElementById("message").innerHTML = "BP recorded successfully.";
+}
+
+function saveDataToLocalStorage(upper, lower, date, time) {
+    // Retrieve existing data from local storage or initialize an empty array
+    var existingData = JSON.parse(localStorage.getItem('bpData')) || [];
+
+    // Add the new data entry to the array
+    existingData.push({ upper: upper, lower: lower, date: date, time: time });
+
+    // Save the updated data array back to local storage
+    localStorage.setItem('bpData', JSON.stringify(existingData));
+}
+
+
+function getCurrentDate() {
+    var today = new Date();
+    var dd = String(today.getDate()).padStart(2, '0');
+    var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    var yyyy = today.getFullYear();
+    return dd + '/' + mm + '/' + yyyy;
+}
+
+function getCurrentTime() {
+    var now = new Date();
+    var hh = String(now.getHours()).padStart(2, '0');
+    var mm = String(now.getMinutes()).padStart(2, '0');
+    return hh + ':' + mm;
+}
+
+function toggleDarkMode() {
+    var body = document.body;
+    var container = document.querySelector('.container');
+    var table = document.querySelector('.bp-table');
+    var sunIcon = document.getElementById('sun-icon');
+    var moonIcon = document.getElementById('moon-icon');
+
+    body.classList.toggle('dark-mode');
+    container.classList.toggle('dark-mode');
+    table.classList.toggle('dark-mode');
+
+    // Toggle between sun and moon icons
+    if (body.classList.contains('dark-mode')) {
+        sunIcon.style.display = 'inline';
+        moonIcon.style.display = 'none';
+    } else {
+        moonIcon.style.display = 'inline';
+        sunIcon.style.display = 'none';
+    }
+}
+
+// Load data from local storage when the page loads
+window.onload = function() {
+    loadSavedData();
+};
+
+function loadSavedData() {
+    var existingData = JSON.parse(localStorage.getItem('bpData'));
+    if (existingData) {
+        var tableBody = document.querySelector("#bpTable tbody");
+        existingData.forEach(function(entry) {
+            var newRow = "<tr><td>" + entry.upper + "</td><td>" + entry.lower + "</td><td>" + entry.date + "</td><td>" + entry.time + "</td></tr>";
+            tableBody.insertAdjacentHTML('beforeend', newRow);
+        });
+    }
+}
+
+function downloadCSV() {
+    var data = [];
+    var headers = ['Systolic BP (Upper)', 'Systolic BP (Lower)', 'Date', 'Time'];
+    
+    // Push headers to data array
+    data.push(headers);
+    
+    // Fetch data from table rows
+    var tableRows = document.querySelectorAll('#bpTable tbody tr');
+    tableRows.forEach(function(row) {
+        var rowData = [];
+        row.querySelectorAll('td').forEach(function(cell) {
+            rowData.push(cell.innerText);
+        });
+        data.push(rowData);
+    });
+
+    // Convert data array to CSV format
+    var csvContent = "data:text/csv;charset=utf-8,";
+    data.forEach(function(rowArray) {
+        var row = rowArray.join(",");
+        csvContent += row + "\r\n";
+    });
+
+    // Create a temporary link element to initiate the download
+    var encodedUri = encodeURI(csvContent);
+    var link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "bp_data.csv");
+    document.body.appendChild(link); // Required for Firefox
+    link.click();
+}
+
+
+</script>
+
+
+<footer>
+    <p>Get well soon ❤️</p>
+    <p>Made by: Artemis Coder 😎</p>
+</footer>
+
+</body>
+</html>
